@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<openerp>
+    <data noupdate="1">
+        <record id="group_request_ssl_cert" model="res.groups">
+            <field name="name">Request SSL certificates</field>
+            <field name="category_id" ref="runbot.module_category" />
+            <field name="users" eval="[(4, ref('base.public_user'))]"/>
+            <field name="implied_ids" eval="[(4, ref('runbot.group_user'))]" />
+        </record>
+        <record id="runbot.group_runbot_admin" model="res.groups">
+            <field name="implied_ids" eval="[(4, ref('group_request_ssl_cert'))]" />
+        </record>
+    </data>
+</openerp>

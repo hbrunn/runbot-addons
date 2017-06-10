@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<openerp>
+    <data>
+        <template id="build" inherit_id="runbot.build">
+            <xpath expr="//form[contains(@t-attf-action, '/force')]" position="before">
+                <form class="navbar-form navbar-left form-inline" t-attf-action="/runbot/build/#{build['id']}/request_ssl_certificate" method='POST' t-if="build['can_request_ssl_cert']">
+                    <button class="btn btn-warning runbot-request-ssl-cert" t-attf-data-runbot-build="#{build['id']}" > <i class='fa fa-refresh'/> Request SSL certificate (<t t-esc="build['available_certs']" /> remaining)</button>
+                </form>
+            </xpath>
+        </template>
+    </data>
+</openerp>
