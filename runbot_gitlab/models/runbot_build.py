@@ -66,10 +66,12 @@ class RunbotBuild(models.Model):
                     "context": "ci/runbot"
                 }
                 if build.coverage:
-                    status['coverage'] = build.coverage
+                    status['coverage'] = build.coverage_result
                 _logger.debug("gitlab updating status %s to %s", build.name,
                               state)
                 response = session.post(_url, status)
                 response.raise_for_status()
             except Exception:
-                _logger.exception('gitlab API error %s', _url)
+                _logger.exception(
+                    'gitlab API error %s with data %s', _url, status,
+                )
