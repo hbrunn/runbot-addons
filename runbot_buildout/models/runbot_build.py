@@ -107,6 +107,15 @@ class RunbotBuild(models.Model):
         )
 
     @api.model
+    def _job_02_run_repack(self, build, lock_path, log_path):
+        # run this only for normal code branches in a buildout repo
+        if not build.repo_id.uses_buildout or\
+                build.branch_id.buildout_version:
+            return MAGIC_PID_RUN_NEXT_JOB
+        build._log('buildout', 'Running repack')
+        return build._spawn_repack(lock_path, log_path)
+
+    @api.model
     def _job_10_test_base(self, build, lock_path, log_path):
         if build.repo_id.uses_buildout:
             if build.branch_id.buildout_version:
@@ -180,13 +189,7 @@ class RunbotBuild(models.Model):
         if build.repo_id.uses_buildout and build.branch_id.buildout_version:
             if self._check_buildout_success(build):
                 build.write({'result': 'ok'})
-                return self._spawn(
-                    'for part in %s/*; do git -C $part repack -a --threads=1; '
-                    'done' % (
-                        build._path('parts')
-                    ), lock_path, log_path, shell=True,
-                    env=build._get_buildout_environment(),
-                )
+                return build._spawn_repack(lock_path, log_path)
             return MAGIC_PID_RUN_NEXT_JOB
         return super(RunbotBuild, self)._job_30_run(
             build, lock_path, log_path
@@ -207,6 +210,19 @@ class RunbotBuild(models.Model):
         if not result:
             build._github_status()
         return result
+
+    @api.multi
+    def _spawn_repack(self, lock_path, log_path):
+        """repack in order to pull all commits earlier recycled via alternative
+        object directories into this checkout"""
+        self.ensure_one()
+        return self._spawn(
+            'for part in %s/*; do git -C $part repack -a --threads=1; '
+            'done' % (
+                self._path('parts')
+            ), lock_path, log_path, shell=True,
+            env=self._get_buildout_environment(),
+        )
 
     @api.multi
     def _spawn_buildout(self, cmd, lock_path, log_path):
@@ -266,7 +282,7 @@ class RunbotBuild(models.Model):
             ('state', '=', 'done'),
             ('result', '=', 'ok'),
             ('branch_id', '=', self.branch_id.id),
-            ('id', '!=', self.id),
+            ('id', '<', self.id),
         ], order='create_date desc', limit=1)
         if previous_build:
             build_environment['GIT_ALTERNATE_OBJECT_DIRECTORIES'] = ':'.join([
